@@ -29,6 +29,7 @@ char const * test_genesis_data = R"%%%({
 	"signature": "ECDA914373A2F0CA1296475BAEE40500A7F0A7AD72A5A80C81D7FAB7F6C802B2CC7DB50F5DD0FB25B2EF11761FA7344A158DD5A700B21BD47DE5BD0F63153A02"
 })%%%";
 
+/*
 char const * beta_genesis_data = R"%%%({
         "type": "open",
         "source": "F9D81CD1BBD9439B609E8F2C5D33893E02BE274FAAE899B57A87034DC9542F8C",
@@ -37,6 +38,18 @@ char const * beta_genesis_data = R"%%%({
         "work": "000000000f0aaeeb",
         "signature": "A726490E3325E4FA59C1C900D5B6EEBB15FE13D99F49D475B93F0AACC5635929A0614CF3892764A04D1C6732A0D716FFEB254D4154C6F544D11E6630F201450B"
 })%%%";
+*/
+char const * beta_genesis_data = R"%%%({
+		"type": "state",
+		"account": "xrb_3ygr5mauqpc5mfibx5sednsrkhi4qrmnzcqam8tqo3r5bq6oadwe9prikbt9",
+		"previous": "0000000000000000000000000000000000000000000000000000000000000000",
+		"representative": "xrb_3ygr5mauqpc5mfibx5sednsrkhi4qrmnzcqam8tqo3r5bq6oadwe9prikbt9",
+		"balance": "1000001000000000000000000000000000000",
+		"link": "0000000000000000000000000000000000000000000000000000000000000000",
+		"signature": "6418C511CB6D68B432641A0DFDF798EAAE78EA96A62062826BB64866D4645612BE4D1EAB05573419B8225B1EC57760D818C145B5861D3F4C371B81389C84AC00",
+		"work": "658fb3580d49033f"
+})%%%";
+
 
 char const * live_genesis_data = R"%%%({
 	"type": "open",
@@ -499,6 +512,7 @@ void rai::amount_visitor::open_block (rai::open_block const & block_a)
 	else
 	{
 		amount = rai::genesis_amount;
+		//amount = block_a.hashables.source;
 		current_amount = 0;
 	}
 }
@@ -924,8 +938,10 @@ rai::genesis::genesis ()
 	std::stringstream istream (rai::genesis_block);
 	boost::property_tree::read_json (istream, tree);
 	auto block (rai::deserialize_block_json (tree));
-	assert (dynamic_cast<rai::open_block *> (block.get ()) != nullptr);
-	open.reset (static_cast<rai::open_block *> (block.release ()));
+	//assert (dynamic_cast<rai::open_block *> (block.get ()) != nullptr);
+	//open.reset (static_cast<rai::open_block *> (block.release ()));
+	assert (dynamic_cast<rai::state_block *> (block.get ()) != nullptr);
+	genesis_block.reset (static_cast<rai::state_block *> (block.release ()));
 }
 
 void rai::genesis::initialize (MDB_txn * transaction_a, rai::block_store & store_a) const
@@ -933,8 +949,8 @@ void rai::genesis::initialize (MDB_txn * transaction_a, rai::block_store & store
 	auto hash_l (hash ());
 	assert (store_a.latest_v0_begin (transaction_a) == store_a.latest_v0_end ());
 	assert (store_a.latest_v1_begin (transaction_a) == store_a.latest_v1_end ());
-	store_a.block_put (transaction_a, hash_l, *open);
-	store_a.account_put (transaction_a, genesis_account, { hash_l, open->hash (), open->hash (), rai::genesis_amount, rai::seconds_since_epoch (), 1, rai::epoch::epoch_0 });
+	store_a.block_put (transaction_a, hash_l, *genesis_block);
+	store_a.account_put (transaction_a, genesis_account, { hash_l, genesis_block->hash (), genesis_block->hash (), rai::genesis_amount, rai::seconds_since_epoch (), 1, rai::epoch::epoch_0 });
 	store_a.representation_put (transaction_a, genesis_account, rai::genesis_amount);
 	store_a.checksum_put (transaction_a, 0, 0, hash_l);
 	store_a.frontier_put (transaction_a, hash_l, genesis_account);
@@ -942,5 +958,5 @@ void rai::genesis::initialize (MDB_txn * transaction_a, rai::block_store & store
 
 rai::block_hash rai::genesis::hash () const
 {
-	return open->hash ();
+	return genesis_block->hash ();
 }

@@ -385,7 +385,7 @@ TEST (ledger, representative_genesis)
 	genesis.initialize (transaction, store);
 	auto latest (ledger.latest (transaction, rai::test_genesis_key.pub));
 	ASSERT_FALSE (latest.is_zero ());
-	ASSERT_EQ (genesis.open->hash (), ledger.representative (transaction, latest));
+	ASSERT_EQ (genesis->hash (), ledger.representative (transaction, latest));
 }
 
 TEST (ledger, weight)
@@ -997,7 +997,7 @@ TEST (ledger, successor)
 	rai::transaction transaction (system.nodes[0]->store.environment, nullptr, true);
 	ASSERT_EQ (rai::process_result::progress, system.nodes[0]->ledger.process (transaction, send1).code);
 	ASSERT_EQ (send1, *system.nodes[0]->ledger.successor (transaction, genesis.hash ()));
-	ASSERT_EQ (*genesis.open, *system.nodes[0]->ledger.successor (transaction, genesis.open->root ()));
+	ASSERT_EQ (*genesis.genesis_block, *system.nodes[0]->ledger.successor (transaction, genesis.genesis_block->root ()));
 	ASSERT_EQ (nullptr, system.nodes[0]->ledger.successor (transaction, 0));
 }
 

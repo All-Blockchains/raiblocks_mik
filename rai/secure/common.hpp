@@ -286,6 +286,7 @@ public:
 	explicit genesis ();
 	void initialize (MDB_txn *, rai::block_store &) const;
 	rai::block_hash hash () const;
-	std::unique_ptr<rai::open_block> open;
+	//std::unique_ptr<rai::open_block> open;
+	std::unique_ptr<rai::state_block> genesis_block;
 };
 }

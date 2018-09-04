@@ -718,7 +718,7 @@ TEST (block_store, block_random)
 	genesis.initialize (transaction, store);
 	auto block (store.block_random (transaction));
 	ASSERT_NE (nullptr, block);
-	ASSERT_EQ (*block, *genesis.open);
+	ASSERT_EQ (*block, *genesis.genesis_block);
 }
 
 TEST (block_store, upgrade_v5_v6)

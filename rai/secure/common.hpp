@@ -280,12 +280,14 @@ extern rai::uint128_t const & genesis_amount;
 extern rai::block_hash const & not_a_block;
 // An account number that compares inequal to any real account number
 extern rai::block_hash const & not_an_account;
+
 class genesis
 {
 public:
 	explicit genesis ();
 	void initialize (MDB_txn *, rai::block_store &) const;
 	rai::block_hash hash () const;
-	std::unique_ptr<rai::open_block> open;
+	rai::block_hash root () const;
+	std::unique_ptr<rai::state_block> genesis_block;
 };
 }

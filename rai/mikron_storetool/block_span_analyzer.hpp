@@ -7,6 +7,23 @@
 
 namespace rai
 {
+enum class state_block_subtype : uint8_t
+{
+	undefined = 0,
+	send = 2,
+	receive = 3,
+	open_receive = 4,
+	open_genesis = 5,
+	change = 6
+};
+
+class state_block_subtype_helper
+{
+public:
+	static rai::state_block_subtype get_subtype (rai::state_block const &, rai::uint128_t);
+	static rai::state_block_subtype get_subtype (rai::ledger &, MDB_txn *, rai::state_block const &);
+};
+
 class span_info
 {
 public:
@@ -21,10 +38,12 @@ public:
 class block_span_analyzer
 {
 public:
+	static rai::state_block_subtype get_subtype (rai::ledger const &);
+
 	void analyze (boost::filesystem::path);
 	//static std::vector <rai::block_hash> pick_random_blocks (int, std::shared_ptr <rai::node> &);
-	span_info analyze_block (rai::block_hash);
-	span_info get_block_span (rai::block_hash);
+	span_info analyze_block (rai::block_hash const &, int level);
+	span_info get_block_span (rai::block_hash const &, int level);
 private:
 	std::shared_ptr <rai::node> node;
 	rai::transaction * transaction;

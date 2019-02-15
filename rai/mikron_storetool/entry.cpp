@@ -44,7 +44,8 @@ int main (int argc, char * const * argv)
 	}
 	boost::program_options::notify (vm);
 	int result (0);
-	boost::filesystem::path data_path = rai::data_path_from_options (vm);
+	//boost::filesystem::path data_path = rai::data_path_from_options (vm);
+	boost::filesystem::path data_path = vm.count ("data_path") ? boost::filesystem::path (vm["data_path"].as<std::string> ()) : rai::working_path ();
 	auto ec = rai::handle_node_options (vm);
 
 	if (ec == rai::error_cli::unknown_command)

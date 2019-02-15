@@ -103,7 +103,9 @@ void rai::block_span_analyzer::analyze (boost::filesystem::path data_path)
 		rai::account account = rai::account (i->first);
 		rai::account_info account_info = rai::account_info (i->second);
 		rai::block_hash block_hash = account_info.head;
-		span_info span = get_block_span (block_hash, 0);
+		int n_checks = 0;
+		int n_checks2 = 0;
+		span_info span = get_block_span (block_hash, 0, n_checks, n_checks2);
 		//account_spans[block_hash] = span;
 		account_span_account_counts.push_back (span.accounts.size ());
 		account_span_blocks_counts.push_back (span.blocks.size ());
@@ -151,12 +153,12 @@ std::vector<rai::block_hash> rai::block_span_analyzer::pick_random_blocks (int n
 }
 */
 
-rai::span_info rai::block_span_analyzer::analyze_block (rai::block_hash const & hash, int level)
+rai::span_info rai::block_span_analyzer::analyze_block (rai::block_hash const & hash, int rec_level, int& n_checks, int& n_checks2)
 {
 	rai::span_info span;
-	if (level >= 100)
+	if (rec_level >= 100)
 		return span;
-	//printf("hash %d %s\n", level, hash.to_string().c_str());
+	//printf("hash %d %s\n", rec_level, hash.to_string().c_str());
 	auto block (node->store.block_get (*transaction, hash));
 	//assert (block != nullptr);
 	if (block == nullptr)
@@ -164,18 +166,21 @@ rai::span_info rai::block_span_analyzer::analyze_block (rai::block_hash const & 
 		printf("block == nullptr\n");
 		return span;
 	}
+	span.merge_block (hash);
+	++n_checks;
+	++n_checks2;
 	rai::block_hash prev = block->previous ();
 	if (prev.number () != 0)
 	{
-		rai::span_info prev_span = get_block_span (prev, level+1);
+		rai::span_info prev_span = get_block_span (prev, rec_level+1, n_checks, n_checks2);
 		span = prev_span;
+		span.merge_block (hash);
 	}
 	switch (block->type ())
 	{
 		case rai::block_type::state:
 			{
 				auto state_block (dynamic_cast<rai::state_block *> (block.get ()));
-				span.merge_block (hash);
 				span.merge_acc (state_block->hashables.account);
 				rai::state_block_subtype subtype = rai::state_block_subtype_helper::get_subtype(node->ledger, *transaction, *state_block);
 				if (subtype == rai::state_block_subtype::receive || subtype == rai::state_block_subtype::open_receive)
@@ -183,7 +188,7 @@ rai::span_info rai::block_span_analyzer::analyze_block (rai::block_hash const & 
 					// receive
 					rai::block_hash send_hash = state_block->hashables.link;
 					//auto block (node->store.block_get (*transaction, send_hash));
-					span_info send_span = get_block_span (send_hash, level+1);
+					span_info send_span = get_block_span (send_hash, rec_level+1, n_checks, n_checks2);
 					span.merge (send_span);
 				}
 			}
@@ -191,25 +196,23 @@ rai::span_info rai::block_span_analyzer::analyze_block (rai::block_hash const & 
 		case rai::block_type::open:
 			{
 				auto open_block (dynamic_cast<rai::open_block *> (block.get ()));
-				span.merge_block (hash);
 				span.merge_acc (open_block->hashables.account);
 				rai::block_hash send_hash = open_block->hashables.source;
 				//auto block (node->store.block_get (*transaction, send_hash));
-				span_info send_span = get_block_span (send_hash, level+1);
+				span_info send_span = get_block_span (send_hash, rec_level+1, n_checks, n_checks2);
 				span.merge (send_span);
 			}
 			break;
 		case rai::block_type::receive:
 			{
 				auto receive_block (dynamic_cast<rai::receive_block *> (block.get ()));
-				span.merge_block (hash);
 				// receive block has no account, strange, take it from ledger
 				// receive_block->hashables.account
 				rai::account account = node->ledger.account(*transaction, hash);
 				span.merge_acc (account);
 				rai::block_hash send_hash = receive_block->hashables.source;
 				//auto block (node->store.block_get (*transaction, send_hash));
-				span_info send_span = get_block_span (send_hash, level+1);
+				span_info send_span = get_block_span (send_hash, rec_level+1, n_checks, n_checks2);
 				span.merge (send_span);
 			}
 			break;
@@ -220,13 +223,13 @@ rai::span_info rai::block_span_analyzer::analyze_block (rai::block_hash const & 
 			// do not follow these blocks
 			break;
 		default:
-			printf("Unsupported type %d %d\n", (int)block->type (), level);
+			printf("Unsupported type %d %d\n", (int)block->type (), rec_level);
 			break;
 	}
 	return span;
 }
 
-rai::span_info rai::block_span_analyzer::get_block_span (rai::block_hash const & hash, int level)
+rai::span_info rai::block_span_analyzer::get_block_span (rai::block_hash const & hash, int rec_level, int& n_checks, int& n_checks2)
 {
 	if (hash.number () == 0)
 	{
@@ -235,13 +238,17 @@ rai::span_info rai::block_span_analyzer::get_block_span (rai::block_hash const &
 	if (span_map.count (hash) > 0)
 	{
 		// found in cache
-		std::cout << "found in cache " << level << " cs " << span_map.size () << " b " << span_map[hash].blocks.size () << std::endl;
+		std::cerr << std::endl << "found in cache l " << rec_level << " ch " << n_checks << " " << n_checks2 << " cs " << span_map.size () << " b " << span_map[hash].blocks.size () << " ";
+		n_checks2 = 0;
 		return span_map[hash];
 	}
-	rai::span_info span = analyze_block (hash, level);
-	span_map[hash] = span;
-	//std::cout << "added span " << level << " a " << span.accounts.size () << " b " << span.blocks.size () << " cs " << span_map.size () << " " << hash.to_string () << std::endl;
-	if (level <= 20) std::cout << level << ".";
-	else if (level <= 100) std::cout << ".";
+	rai::span_info span = analyze_block (hash, rec_level, n_checks, n_checks2);
+	if (n_checks2 >= 20)
+	{
+		span_map[hash] = span;
+		//std::cerr << "added span " << rec_level << " a " << span.accounts.size () << " b " << span.blocks.size () << " cs " << span_map.size () << " " << hash.to_string () << std::endl;
+	}
+	if (rec_level <= 20) std::cerr << rec_level << ".";
+	else if (rec_level <= 100) std::cerr << ".";
 	return span;
 }

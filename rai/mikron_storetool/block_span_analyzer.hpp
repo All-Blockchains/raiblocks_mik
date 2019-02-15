@@ -42,8 +42,8 @@ public:
 
 	void analyze (boost::filesystem::path);
 	//static std::vector <rai::block_hash> pick_random_blocks (int, std::shared_ptr <rai::node> &);
-	span_info analyze_block (rai::block_hash const &, int level);
-	span_info get_block_span (rai::block_hash const &, int level);
+	span_info analyze_block (rai::block_hash const &, int rec_level, int& n_checks, int& n_checks2);
+	span_info get_block_span (rai::block_hash const &, int rec_level, int& n_checks, int& n_checks2);
 private:
 	std::shared_ptr <rai::node> node;
 	rai::transaction * transaction;

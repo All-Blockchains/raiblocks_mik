@@ -121,38 +121,6 @@ void rai::block_span_analyzer::analyze (boost::filesystem::path data_path)
 	std::cout << "median_block_count " << median_block_count << " " << account_span_blocks_counts[0] << " - " << account_span_blocks_counts[account_span_blocks_counts.size () - 1] << std::endl;
 }
 
-/*
-std::vector<rai::block_hash> rai::block_span_analyzer::pick_random_blocks (int n, std::shared_ptr<rai::node> & node)
-{
-	// Eunmerate all block hashes, and randomly pick n out of them
-	std::vector<rai::block_hash> all_blocks;
-	rai::transaction transaction (node->store.environment, nullptr, false);
-	for (auto i (node->store.latest_begin (transaction)), n (node->store.latest_end ()); i != n; ++i)
-	{
-		rai::account account = rai::account (i->first.uint256 ());
-		rai::account_info account_info = rai::account_info (i->second);
-		rai::block_hash block_hash = account_info.head;
-		while (block_hash.number () != 0)
-		{
-			all_blocks.push_back (block_hash);
-			auto block (node->store.block_get (transaction, block_hash));
-			block_hash = block->previous ();
-		}
-	}
-	int n_blocks = all_blocks.size ();
-	std::default_random_engine generator;
-	std::uniform_int_distribution<int> distribution(0, n_blocks - 1);
-	std::vector<rai::block_hash> blocks;
-	for (int i = 0; i < n; ++i)
-	{
-		int idx = distribution (generator);
-		blocks.push_back (all_blocks[idx]);
-	}
-	std::cout << "Selected " << blocks.size () << " blocks from among " << all_blocks.size () << " blocks" << std::endl;
-	return blocks;
-}
-*/
-
 rai::span_info rai::block_span_analyzer::analyze_block (rai::block_hash const & hash, int rec_level, int& n_checks, int& n_checks2)
 {
 	rai::span_info span;

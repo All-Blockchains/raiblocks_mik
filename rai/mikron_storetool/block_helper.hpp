@@ -11,6 +11,10 @@ public:
 	enum class block_type : uint8_t
 	{
 		undefined = 0,
+		send = 2, // legacy
+		receive = 3, // legacy
+		open = 4, // legacy
+		change = 5, // legacy
 		state_send = 6,
 		state_receive = 7,
 		state_open_receive = 8,
@@ -18,7 +22,10 @@ public:
 		state_change = 10
 	};
 
-	static block_type get_block_type (std::unique_ptr<rai::block> const &, std::shared_ptr<rai::node> &, rai::transaction &);
+	static block_type get_block_type (std::unique_ptr<rai::block> const &, rai::ledger &, rai::transaction &);
 	static rai::block_hash get_receive_source (std::unique_ptr<rai::block> const &, block_type);
+	// legacy
+	static block_type get_state_subtype (rai::state_block const &, rai::ledger &, rai::transaction &);
+	static block_type get_state_subtype_balance (rai::state_block const &, rai::uint256_t);
 };
 }
